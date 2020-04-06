@@ -1,11 +1,4 @@
-import {
-  BUCKET_SIZE,
-  BucketStatsInterface,
-  RUN_STATUS,
-  RUN_TYPE,
-  RunRecordInterface,
-  TIMELINE_EVENT_STATUS
-} from '@asserted/models';
+import { BUCKET_SIZE, BucketStatsInterface, RUN_STATUS, RUN_TYPE, RunRecordInterface, TIMELINE_EVENT_STATUS } from '@asserted/models';
 import { expect } from 'chai';
 import { DateTime } from 'luxon';
 

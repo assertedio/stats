@@ -1,6 +1,7 @@
 import {
   BUCKET_SIZE,
-  BucketResultInterface, BucketStatsInterface,
+  BucketResultInterface,
+  BucketStatsInterface,
   CompletedRunRecord,
   RoutineStatsInterface,
   RUN_STATUS,
@@ -156,9 +157,9 @@ export class Stats {
     const rangeEnd = relative ? end.endOf(Stats.shiftDown(bucketSize)) : end.endOf(bucketSize);
     const rangeStart = relative
       ? rangeEnd
-        .minus(rangeDuration)
-        .plus({ [Stats.shiftDown(bucketSize)]: 1 })
-        .startOf(Stats.shiftDown(bucketSize))
+          .minus(rangeDuration)
+          .plus({ [Stats.shiftDown(bucketSize)]: 1 })
+          .startOf(Stats.shiftDown(bucketSize))
       : start.startOf(bucketSize);
 
     const bucketStart = rangeStart;
