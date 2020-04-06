@@ -12,7 +12,7 @@
     }
   },
   "dependencies": {
-    "@asserted/models": "^4.0.4-15",
+    "@asserted/models": "^4.0.4-16",
     "@types/luxon": "^1.22.0",
     "lodash": "^4.17.15",
     "luxon": "^1.22.2"
