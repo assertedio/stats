@@ -3,6 +3,7 @@ import {
   BucketResultInterface,
   BucketStatsInterface,
   CompletedRunRecord,
+  CompletedRunRecordInterface,
   RoutineStatsInterface,
   RUN_STATUS,
   RunRecordInterface,
@@ -57,7 +58,7 @@ export class Stats {
    * @param {RunRecordInterface} runRecord
    * @returns {StatsResultInterface}
    */
-  static updateBucket(bucket: StatsResultInterface, runRecord: RunRecordInterface): StatsResultInterface {
+  static updateBucket(bucket: StatsResultInterface, runRecord: RunRecordInterface | CompletedRunRecordInterface): StatsResultInterface {
     const { status, stats } = runRecord;
 
     if (!stats) {
@@ -115,6 +116,38 @@ export class Stats {
     };
   }
   /* eslint-enable max-params */
+
+  /**
+   * Only works for non-relative bucketing
+   * @param {StatsResultInterface[]} buckets
+   * @param {RunRecordInterface} runRecord
+   * @param {BUCKET_SIZE} bucketSize
+   * @returns {StatsResultInterface[]}
+   */
+  static incrementBuckets(buckets: StatsResultInterface[], runRecord: CompletedRunRecordInterface, bucketSize: BUCKET_SIZE): StatsResultInterface[] {
+    if (!runRecord.completedAt) {
+      throw new Error('Cannot include incomplete record in buckets');
+    }
+
+    // Buckets exist and latest record is in the last bucket
+    if (buckets.length > 0 && buckets[0].end > runRecord.completedAt) {
+      Stats.updateBucket(buckets[0], runRecord);
+      return buckets;
+    }
+
+    // Otherwise there either are no buckets, or the record is out of range of the latest
+    const { bucketStart, bucketEnd } = Stats.initializeBoundaries(
+      DateTime.fromJSDate(runRecord.completedAt).toUTC(),
+      DateTime.fromJSDate(runRecord.completedAt).toUTC(),
+      bucketSize,
+      false
+    );
+
+    let bucket = Stats.initializeBucket(bucketStart.toUTC().toJSDate(), bucketEnd.toUTC().toJSDate());
+    bucket = Stats.updateBucket(bucket, runRecord);
+    buckets.push(bucket);
+    return buckets;
+  }
 
   /**
    * Get next lower appropriate bucket size
@@ -248,7 +281,7 @@ export class Stats {
    * @param {RunRecordInterface} runRecord
    * @returns {TIMELINE_EVENT_STATUS}
    */
-  static getTimelineEventStatus(runRecord: RunRecordInterface): TIMELINE_EVENT_STATUS {
+  static getTimelineEventStatus(runRecord: RunRecordInterface | CompletedRunRecordInterface): TIMELINE_EVENT_STATUS {
     const { stats } = runRecord;
 
     if (!stats) {
@@ -274,7 +307,7 @@ export class Stats {
    * @param {RunRecordInterface} runRecord
    * @returns {TimelineEvent}
    */
-  static initializeTimelineEvent(runRecord: RunRecordInterface): TimelineEventInterface {
+  static initializeTimelineEvent(runRecord: RunRecordInterface | CompletedRunRecordInterface): TimelineEventInterface {
     return new TimelineEvent({
       start: runRecord.completedAt as Date,
       end: runRecord.completedAt as Date,
@@ -289,19 +322,30 @@ export class Stats {
    * @param {RunRecordInterface} runRecord
    * @returns {TimelineEvent[]}
    */
-  static incrementTimelineEvent(events: TimelineEventInterface[], runRecord: RunRecordInterface): TimelineEventInterface[] {
+  static incrementTimelineEvent(
+    events: TimelineEventInterface[],
+    runRecord: RunRecordInterface | CompletedRunRecordInterface
+  ): TimelineEventInterface[] {
+    if (!runRecord.completedAt) {
+      throw new Error('Cannot include incomplete record in timeline');
+    }
+
     if (events.length === 0) {
       events.push(Stats.initializeTimelineEvent(runRecord));
       return events;
     }
 
-    const lastIndex = events.length - 1;
     const status = Stats.getTimelineEventStatus(runRecord);
 
-    events[lastIndex].end = runRecord.completedAt as Date;
+    if (events[0].end >= runRecord.completedAt) {
+      // Ignore out-of-order events
+      return events;
+    }
 
-    if (events[lastIndex].status !== status) {
-      events.push(
+    events[0].end = runRecord.completedAt as Date;
+
+    if (events[0].status !== status) {
+      events.unshift(
         new TimelineEvent({
           start: runRecord.completedAt as Date,
           end: runRecord.completedAt as Date,
@@ -310,7 +354,7 @@ export class Stats {
         })
       );
     } else {
-      events[lastIndex].records.unshift(new CompletedRunRecord(runRecord));
+      events[0].records.unshift(new CompletedRunRecord(runRecord));
     }
 
     return events;
@@ -349,7 +393,7 @@ export class Stats {
       currentRecord = runRecords.shift();
     }
 
-    return timelineEvents.reverse();
+    return timelineEvents;
   }
 
   /**

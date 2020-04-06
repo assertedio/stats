@@ -444,7 +444,7 @@ describe('stats bucket unit tests', () => {
 
     const runRecords: RunRecordInterface[] = [];
 
-    const buckets = Stats.bucketRecords(runRecords, bucketStatsRequest);
+    const buckets = Stats.bucketRecords(runRecords, bucketStatsRequest, false);
 
     const expected = {
       start: curDate.startOf('month').toJSDate(),
@@ -596,15 +596,15 @@ describe('stats bucket unit tests', () => {
 
     const runRecords: RunRecordInterface[] = [];
 
-    const buckets = Stats.bucketRecords(runRecords, bucketStatsRequest);
+    const buckets = Stats.bucketRecords(runRecords, bucketStatsRequest, true);
 
     const expected = {
-      start: curDate.startOf('month').toJSDate(),
-      end: curDate.plus({ month: 1 }).endOf('month').toJSDate(),
+      start: new Date('2017-12-06T00:00:00.000Z'),
+      end: curDate.plus({ month: 1 }).endOf('day').toJSDate(),
       bucketSize: 'month',
       overall: {
-        start: curDate.startOf('month').toJSDate(),
-        end: curDate.plus({ month: 1 }).endOf('month').toJSDate(),
+        start: new Date('2017-12-06T00:00:00.000Z'),
+        end: curDate.plus({ month: 1 }).endOf('day').toJSDate(),
         runs: {
           availability: 0,
           passes: 0,
@@ -620,8 +620,8 @@ describe('stats bucket unit tests', () => {
       },
       buckets: [
         {
-          start: curDate.startOf('month').toJSDate(),
-          end: curDate.endOf('month').toJSDate(),
+          start: new Date('2017-12-06T00:00:00.000Z'),
+          end: new Date('2018-01-04T23:59:59.999Z'),
           runs: {
             availability: 0,
             passes: 0,
@@ -636,8 +636,8 @@ describe('stats bucket unit tests', () => {
           },
         },
         {
-          start: curDate.plus({ month: 1 }).startOf('month').toJSDate(),
-          end: curDate.plus({ month: 1 }).endOf('month').toJSDate(),
+          start: new Date('2018-01-05T00:00:00.000Z'),
+          end: curDate.plus({ month: 1 }).endOf('day').toJSDate(),
           runs: {
             availability: 0,
             passes: 0,
@@ -655,6 +655,217 @@ describe('stats bucket unit tests', () => {
     };
 
     expect(buckets).to.eql(expected);
+  });
+
+  it('increment empty buckets', () => {
+    const curDate = DateTime.fromISO('2018-01-02T00:00:00.000Z').toUTC();
+
+    const defaultRunRecord = {
+      id: 'foo-id',
+      status: RUN_STATUS.CREATED,
+      routineId: 'routine-id',
+      projectId: 'project-id',
+      errors: null,
+      runId: 'foo-id',
+      type: RUN_TYPE.MANUAL,
+      stats: null,
+      console: null,
+      failType: null,
+      testDurationMs: null,
+      runDurationMs: null,
+      completedAt: null,
+    };
+
+    const defaultStats = {
+      pending: 0,
+      tests: 1,
+      suites: 1,
+      start: undefined,
+      end: undefined,
+      duration: undefined,
+    };
+
+    const buckets = [] as any;
+
+    const failingRecord = {
+      ...defaultRunRecord,
+      stats: { ...defaultStats, passes: 0, failures: 1 },
+      completedAt: curDate.plus({ minutes: 5 }).toJSDate(),
+      runDurationMs: 0,
+    } as any;
+
+    const updatedBuckets = Stats.incrementBuckets(buckets, failingRecord, BUCKET_SIZE.DAY);
+
+    expect(updatedBuckets).to.eql([
+      {
+        start: new Date('2018-01-02T00:00:00.000Z'),
+        end: new Date('2018-01-02T23:59:59.999Z'),
+        runs: {
+          availability: 0,
+          passes: 0,
+          failures: 1,
+          total: 1,
+        },
+        tests: {
+          availability: 0,
+          passes: 0,
+          failures: 1,
+          total: 1,
+        },
+      },
+    ]);
+  });
+
+  it('increment existing buckets', () => {
+    const curDate = DateTime.fromISO('2018-01-02T00:00:00.000Z').toUTC();
+
+    const defaultRunRecord = {
+      id: 'foo-id',
+      status: RUN_STATUS.CREATED,
+      routineId: 'routine-id',
+      projectId: 'project-id',
+      errors: null,
+      runId: 'foo-id',
+      type: RUN_TYPE.MANUAL,
+      stats: null,
+      console: null,
+      failType: null,
+      testDurationMs: null,
+      runDurationMs: null,
+      completedAt: null,
+    };
+
+    const defaultStats = {
+      pending: 0,
+      tests: 1,
+      suites: 1,
+      start: undefined,
+      end: undefined,
+      duration: undefined,
+    };
+
+    let buckets = [] as any;
+
+    const failingRecord = {
+      ...defaultRunRecord,
+      stats: { ...defaultStats, passes: 0, failures: 1 },
+      completedAt: curDate.plus({ minutes: 5 }).toJSDate(),
+      runDurationMs: 0,
+    } as any;
+
+    buckets = Stats.incrementBuckets(buckets, failingRecord, BUCKET_SIZE.DAY);
+
+    const anotherFailingRecord = {
+      ...defaultRunRecord,
+      stats: { ...defaultStats, passes: 0, failures: 1 },
+      completedAt: curDate.plus({ minutes: 10 }).toJSDate(),
+      runDurationMs: 0,
+    } as any;
+
+    buckets = Stats.incrementBuckets(buckets, anotherFailingRecord, BUCKET_SIZE.DAY);
+
+    expect(buckets).to.eql([
+      {
+        start: new Date('2018-01-02T00:00:00.000Z'),
+        end: new Date('2018-01-02T23:59:59.999Z'),
+        runs: {
+          availability: 0,
+          passes: 0,
+          failures: 2,
+          total: 2,
+        },
+        tests: {
+          availability: 0,
+          passes: 0,
+          failures: 2,
+          total: 2,
+        },
+      },
+    ]);
+  });
+
+  it('increment existing buckets and add bucket', () => {
+    const curDate = DateTime.fromISO('2018-01-02T00:00:00.000Z').toUTC();
+
+    const defaultRunRecord = {
+      id: 'foo-id',
+      status: RUN_STATUS.CREATED,
+      routineId: 'routine-id',
+      projectId: 'project-id',
+      errors: null,
+      runId: 'foo-id',
+      type: RUN_TYPE.MANUAL,
+      stats: null,
+      console: null,
+      failType: null,
+      testDurationMs: null,
+      runDurationMs: null,
+      completedAt: null,
+    };
+
+    const defaultStats = {
+      pending: 0,
+      tests: 1,
+      suites: 1,
+      start: undefined,
+      end: undefined,
+      duration: undefined,
+    };
+
+    let buckets = [] as any;
+
+    const failingRecord = {
+      ...defaultRunRecord,
+      stats: { ...defaultStats, passes: 0, failures: 1 },
+      completedAt: curDate.plus({ minutes: 5 }).toJSDate(),
+      runDurationMs: 0,
+    } as any;
+
+    buckets = Stats.incrementBuckets(buckets, failingRecord, BUCKET_SIZE.DAY);
+
+    const anotherFailingRecord = {
+      ...defaultRunRecord,
+      stats: { ...defaultStats, passes: 0, failures: 1 },
+      completedAt: curDate.plus({ days: 1 }).toJSDate(),
+      runDurationMs: 0,
+    } as any;
+
+    buckets = Stats.incrementBuckets(buckets, anotherFailingRecord, BUCKET_SIZE.DAY);
+
+    expect(buckets).to.eql([
+      {
+        start: new Date('2018-01-02T00:00:00.000Z'),
+        end: new Date('2018-01-02T23:59:59.999Z'),
+        runs: {
+          availability: 0,
+          passes: 0,
+          failures: 1,
+          total: 1,
+        },
+        tests: {
+          availability: 0,
+          passes: 0,
+          failures: 1,
+          total: 1,
+        },
+      },
+      {
+        start: new Date('2018-01-03T00:00:00.000Z'),
+        end: new Date('2018-01-03T23:59:59.999Z'),
+        runs: {
+          availability: 0,
+          passes: 0,
+          failures: 1,
+          total: 1,
+        },
+        tests: {
+          availability: 0,
+          passes: 0,
+          failures: 1,
+          total: 1,
+        },
+      },
+    ]);
   });
 });
 
@@ -730,17 +941,89 @@ describe('stats timeline unit tests', () => {
     Stats.incrementTimelineEvent(events as any, passingRecord);
     expect(events).to.eql([
       {
-        status: TIMELINE_EVENT_STATUS.DOWN,
-        end: curDate.plus({ minutes: 10 }).toJSDate(),
-        durationSec: 0,
-        records: [failingRecord],
-      },
-      {
         status: TIMELINE_EVENT_STATUS.UP,
         durationSec: 0,
         start: curDate.plus({ minutes: 10 }).toJSDate(),
         end: curDate.plus({ minutes: 10 }).toJSDate(),
         records: [passingRecord],
+      },
+      {
+        status: TIMELINE_EVENT_STATUS.DOWN,
+        end: curDate.plus({ minutes: 10 }).toJSDate(),
+        durationSec: 0,
+        records: [failingRecord],
+      },
+    ]);
+  });
+
+  it('drop out of order timeline events', () => {
+    const curDate = DateTime.fromISO('2018-01-01T00:00:00.000Z');
+
+    const defaultRunRecord = {
+      id: 'foo-id',
+      status: RUN_STATUS.CREATED,
+      routineId: 'routine-id',
+      projectId: 'project-id',
+      errors: null,
+      runId: 'foo-id',
+      type: RUN_TYPE.MANUAL,
+      stats: null,
+      console: null,
+      failType: null,
+      testDurationMs: null,
+      runDurationMs: null,
+      completedAt: null,
+    };
+
+    const defaultStats = {
+      pending: 0,
+      tests: 1,
+      suites: 1,
+      start: undefined,
+      end: undefined,
+      duration: undefined,
+    };
+
+    const events = [
+      {
+        end: curDate.toJSDate(),
+        status: TIMELINE_EVENT_STATUS.DOWN,
+        durationSec: 0,
+        records: [],
+      },
+    ];
+
+    const failingRecord = {
+      ...defaultRunRecord,
+      stats: { ...defaultStats, passes: 0, failures: 1 },
+      completedAt: curDate.plus({ minutes: 5 }).toJSDate(),
+      runDurationMs: 0,
+    } as any;
+
+    Stats.incrementTimelineEvent(events as any, failingRecord);
+    expect(events).to.eql([
+      {
+        status: TIMELINE_EVENT_STATUS.DOWN,
+        end: curDate.plus({ minutes: 5 }).toJSDate(),
+        durationSec: 0,
+        records: [failingRecord],
+      },
+    ]);
+
+    const passingRecord = {
+      ...defaultRunRecord,
+      stats: { ...defaultStats, passes: 1, failures: 0 },
+      completedAt: curDate.minus({ minutes: 10 }).toJSDate(),
+      runDurationMs: 0,
+    } as any;
+
+    Stats.incrementTimelineEvent(events as any, passingRecord);
+    expect(events).to.eql([
+      {
+        status: TIMELINE_EVENT_STATUS.DOWN,
+        end: curDate.plus({ minutes: 5 }).toJSDate(),
+        durationSec: 0,
+        records: [failingRecord],
       },
     ]);
   });
