@@ -429,13 +429,13 @@ export class Stats {
    * @param {Date} curDate
    * @returns {RoutineStatsInterface}
    */
-  static current(runRecords: RunRecordInterface[], curDate = DateTime.utc().toJSDate()): Omit<RoutineStatsInterface, 'records'> {
+  static current(runRecords: RunRecordInterface[], curDate = DateTime.utc().toJSDate()): RoutineStatsInterface {
     // Want to select enough runs for any month and/or 30 days
     const start = DateTime.fromJSDate(curDate).minus({ week: 1 });
     const end = DateTime.fromJSDate(curDate);
 
     const timeline = Stats.timelineRecords(runRecords, start.toJSDate(), end.toJSDate());
-    const { buckets } = Stats.bucketRecords(
+    const { buckets, bucketSize } = Stats.bucketRecords(
       runRecords,
       {
         bucketSize: BUCKET_SIZE.HOUR,
@@ -452,6 +452,7 @@ export class Stats {
       latestRecord,
       timeline,
       buckets,
+      bucketSize,
     };
   }
 
