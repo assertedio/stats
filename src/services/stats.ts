@@ -282,7 +282,11 @@ export class Stats {
    * @returns {TIMELINE_EVENT_STATUS}
    */
   static getTimelineEventStatus(runRecord: RunRecordInterface | CompletedRunRecordInterface): TIMELINE_EVENT_STATUS {
-    const { stats } = runRecord;
+    const { stats, timeoutType } = runRecord;
+
+    if (timeoutType) {
+      return TIMELINE_EVENT_STATUS.TIMEOUT;
+    }
 
     if (!stats) {
       return TIMELINE_EVENT_STATUS.UNKNOWN;

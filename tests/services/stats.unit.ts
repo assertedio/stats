@@ -1,4 +1,12 @@
-import { BUCKET_SIZE, BucketStatsInterface, RUN_STATUS, RUN_TYPE, RunRecordInterface, TIMELINE_EVENT_STATUS } from '@asserted/models';
+import {
+  BUCKET_SIZE,
+  BucketStatsInterface,
+  RUN_STATUS,
+  RUN_TIMEOUT_TYPE,
+  RUN_TYPE,
+  RunRecordInterface,
+  TIMELINE_EVENT_STATUS,
+} from '@asserted/models';
 import { expect } from 'chai';
 import { DateTime } from 'luxon';
 
@@ -43,9 +51,10 @@ describe('stats bucket unit tests', () => {
       testDurationMs: 0,
       console: null,
       failType: null,
+      timeoutType: null,
       errors: null,
       stats: {
-        duration: undefined,
+        duration: null,
         end: undefined,
         suites: 3,
         tests: 5,
@@ -96,9 +105,10 @@ describe('stats bucket unit tests', () => {
       testDurationMs: 0,
       console: null,
       failType: null,
+      timeoutType: null,
       errors: null,
       stats: {
-        duration: undefined,
+        duration: null,
         end: undefined,
         suites: 3,
         tests: 5,
@@ -157,9 +167,10 @@ describe('stats bucket unit tests', () => {
       testDurationMs: 0,
       console: null,
       failType: null,
+      timeoutType: null,
       errors: null,
       stats: {
-        duration: undefined,
+        duration: null,
         end: undefined,
         suites: 3,
         tests: 5,
@@ -269,9 +280,10 @@ describe('stats bucket unit tests', () => {
       testDurationMs: 0,
       console: null,
       failType: null,
+      timeoutType: null,
       errors: null,
       stats: {
-        duration: undefined,
+        duration: null,
         end: undefined,
         suites: 3,
         tests: 5,
@@ -682,7 +694,7 @@ describe('stats bucket unit tests', () => {
       suites: 1,
       start: undefined,
       end: undefined,
-      duration: undefined,
+      duration: null,
     };
 
     const buckets = [] as any;
@@ -741,7 +753,7 @@ describe('stats bucket unit tests', () => {
       suites: 1,
       start: undefined,
       end: undefined,
-      duration: undefined,
+      duration: null,
     };
 
     let buckets = [] as any;
@@ -809,7 +821,7 @@ describe('stats bucket unit tests', () => {
       suites: 1,
       start: undefined,
       end: undefined,
-      duration: undefined,
+      duration: null,
     };
 
     let buckets = [] as any;
@@ -871,6 +883,9 @@ describe('stats bucket unit tests', () => {
 
 describe('stats timeline unit tests', () => {
   it('get timeline event status', () => {
+    expect(Stats.getTimelineEventStatus({ stats: { passes: 0, failures: 0 }, timeoutType: RUN_TIMEOUT_TYPE.REPORTER } as any)).to.eql(
+      TIMELINE_EVENT_STATUS.TIMEOUT
+    );
     expect(Stats.getTimelineEventStatus({ stats: { passes: 0, failures: 0 } } as any)).to.eql(TIMELINE_EVENT_STATUS.UNKNOWN);
     expect(Stats.getTimelineEventStatus({ stats: { passes: 1, failures: 0 } } as any)).to.eql(TIMELINE_EVENT_STATUS.UP);
     expect(Stats.getTimelineEventStatus({ stats: { passes: 0, failures: 1 } } as any)).to.eql(TIMELINE_EVENT_STATUS.DOWN);
@@ -893,6 +908,7 @@ describe('stats timeline unit tests', () => {
       failType: null,
       testDurationMs: null,
       runDurationMs: null,
+      timeoutType: null,
       completedAt: null,
     };
 
@@ -902,7 +918,7 @@ describe('stats timeline unit tests', () => {
       suites: 1,
       start: undefined,
       end: undefined,
-      duration: undefined,
+      duration: null,
     };
 
     const events = [
@@ -972,6 +988,7 @@ describe('stats timeline unit tests', () => {
       failType: null,
       testDurationMs: null,
       runDurationMs: null,
+      timeoutType: null,
       completedAt: null,
     };
 
@@ -981,7 +998,7 @@ describe('stats timeline unit tests', () => {
       suites: 1,
       start: undefined,
       end: undefined,
-      duration: undefined,
+      duration: null,
     };
 
     const events = [
@@ -1042,9 +1059,10 @@ describe('stats timeline unit tests', () => {
       testDurationMs: 0,
       console: null,
       failType: null,
+      timeoutType: null,
       errors: null,
       stats: {
-        duration: undefined,
+        duration: null,
         end: undefined,
         suites: 3,
         tests: 5,
@@ -1070,7 +1088,7 @@ describe('stats timeline unit tests', () => {
       {
         ...defaultRunRecord,
         stats: {
-          duration: undefined,
+          duration: null,
           end: undefined,
           suites: 3,
           tests: 5,
