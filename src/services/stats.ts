@@ -6,6 +6,7 @@ import {
   CompletedRunRecordInterface,
   RoutineStatsInterface,
   RUN_STATUS,
+  STATS_WINDOW,
   StatsResultInterface,
   StatusResultInterface,
   SummaryResultInterface,
@@ -146,6 +147,27 @@ export class Stats {
     bucket = Stats.updateBucket(bucket, runRecord);
     buckets.push(bucket);
     return buckets;
+  }
+
+  /**
+   * Get bucket from window
+   * @param {STATS_WINDOW} window
+   * @returns {BUCKET_SIZE}
+   */
+  static getBucketFromWindow(window: STATS_WINDOW): BUCKET_SIZE {
+    switch (window) {
+      case STATS_WINDOW.MONTH:
+        return BUCKET_SIZE.DAY;
+      case STATS_WINDOW.WEEK:
+        return BUCKET_SIZE.HOUR;
+      case STATS_WINDOW.DAY: // This and hour window are badly bucketed
+        return BUCKET_SIZE.HOUR;
+      case STATS_WINDOW.HOUR:
+        return BUCKET_SIZE.HOUR;
+      default: {
+        throw new Error(`unexpected window size: ${window}`);
+      }
+    }
   }
 
   /**
@@ -470,19 +492,19 @@ export class Stats {
   /**
    * Get current stats for a routine
    * @param {CompletedRunRecordInterface[]} runRecords
+   * @param {STATS_WINDOW} window
    * @param {Date} curDate
    * @returns {RoutineStatsInterface}
    */
-  static current(runRecords: CompletedRunRecordInterface[], curDate = DateTime.utc().toJSDate()): RoutineStatsInterface {
-    // Want to select enough runs for any month and/or 30 days
-    const start = DateTime.fromJSDate(curDate).minus({ week: 1 });
+  static current(runRecords: CompletedRunRecordInterface[], window: STATS_WINDOW, curDate = DateTime.utc().toJSDate()): RoutineStatsInterface {
+    const start = DateTime.fromJSDate(curDate).minus({ [window]: 1 });
     const end = DateTime.fromJSDate(curDate);
 
     const timeline = Stats.timelineRecords(runRecords, start.toJSDate(), end.toJSDate());
     const { buckets, bucketSize } = Stats.bucketRecords(
       runRecords,
       {
-        bucketSize: BUCKET_SIZE.HOUR,
+        bucketSize: Stats.getBucketFromWindow(window),
         start: start.toJSDate(),
         end: end.toJSDate(),
       },
