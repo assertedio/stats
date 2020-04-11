@@ -1,10 +1,10 @@
 import {
   BUCKET_SIZE,
   BucketStatsInterface,
+  CompletedRunRecordInterface,
   RUN_STATUS,
   RUN_TIMEOUT_TYPE,
   RUN_TYPE,
-  RunRecordInterface,
   TIMELINE_EVENT_STATUS,
 } from '@asserted/models';
 import { expect } from 'chai';
@@ -66,7 +66,7 @@ describe('stats bucket unit tests', () => {
       events: [],
       createdAt: curDate.toJSDate(),
       updatedAt: curDate.toJSDate(),
-      completedAt: null,
+      completedAt: curDate.toJSDate(),
     };
 
     const bucket = Stats.initializeBucket(curDate.toJSDate(), curDate.plus({ days: 1 }).toJSDate());
@@ -120,7 +120,7 @@ describe('stats bucket unit tests', () => {
       events: [],
       createdAt: curDate.toJSDate(),
       updatedAt: curDate.toJSDate(),
-      completedAt: null,
+      completedAt: curDate.toJSDate(),
     };
 
     const bucket = Stats.initializeBucket(curDate.toJSDate(), curDate.plus({ days: 1 }).toJSDate());
@@ -184,7 +184,7 @@ describe('stats bucket unit tests', () => {
       updatedAt: curDate.toJSDate(),
     };
 
-    const runRecords: RunRecordInterface[] = [
+    const runRecords: CompletedRunRecordInterface[] = [
       {
         ...defaultRunRecord,
         completedAt: curDate.plus({ day: 1 }).toJSDate(),
@@ -297,7 +297,7 @@ describe('stats bucket unit tests', () => {
       updatedAt: curDate.toJSDate(),
     };
 
-    const runRecords: RunRecordInterface[] = [
+    const runRecords: CompletedRunRecordInterface[] = [
       {
         ...defaultRunRecord,
         completedAt: curDate.minus({ week: 1 }).toJSDate(),
@@ -382,7 +382,7 @@ describe('stats bucket unit tests', () => {
       routineId: null,
     };
 
-    const runRecords: RunRecordInterface[] = [];
+    const runRecords: CompletedRunRecordInterface[] = [];
 
     const buckets = Stats.bucketRecords(runRecords, bucketSatsRequest);
     const expected = {
@@ -454,7 +454,7 @@ describe('stats bucket unit tests', () => {
       routineId: null,
     };
 
-    const runRecords: RunRecordInterface[] = [];
+    const runRecords: CompletedRunRecordInterface[] = [];
 
     const buckets = Stats.bucketRecords(runRecords, bucketStatsRequest, false);
 
@@ -606,7 +606,7 @@ describe('stats bucket unit tests', () => {
       routineId: null,
     };
 
-    const runRecords: RunRecordInterface[] = [];
+    const runRecords: CompletedRunRecordInterface[] = [];
 
     const buckets = Stats.bucketRecords(runRecords, bucketStatsRequest, true);
 
@@ -1076,7 +1076,7 @@ describe('stats timeline unit tests', () => {
       updatedAt: curDate.toJSDate(),
     };
 
-    const runRecords: RunRecordInterface[] = [
+    const runRecords: CompletedRunRecordInterface[] = [
       {
         ...defaultRunRecord,
         completedAt: curDate.minus({ week: 1 }).toJSDate(),
