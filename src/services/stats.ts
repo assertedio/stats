@@ -528,7 +528,8 @@ export class Stats {
    * @returns {StatsResultInterface}
    */
   static status(runRecords: CompletedRunRecordInterface[], curDate = DateTime.utc().toJSDate()): StatusResultInterface {
-    const start = DateTime.fromJSDate(curDate).minus({ day: 1 });
+    // Need this length of time to calculate accurate uptime
+    const start = DateTime.fromJSDate(curDate).minus({ day: 30 });
     const end = DateTime.fromJSDate(curDate);
 
     const events = Stats.timelineRecords(runRecords, start.toJSDate(), end.toJSDate());
