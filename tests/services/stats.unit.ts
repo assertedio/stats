@@ -1,16 +1,8 @@
-import {
-  BUCKET_SIZE,
-  BucketStatsInterface,
-  CompletedRunRecordInterface,
-  RUN_STATUS,
-  RUN_TIMEOUT_TYPE,
-  RUN_TYPE,
-  TIMELINE_EVENT_STATUS,
-} from '@asserted/models';
+import { BUCKET_SIZE, CompletedRunRecordInterface, RUN_STATUS, RUN_TIMEOUT_TYPE, RUN_TYPE, TIMELINE_EVENT_STATUS } from '@asserted/models';
 import { expect } from 'chai';
 import { DateTime } from 'luxon';
 
-import { Stats } from '../../src/services/stats';
+import { BucketStatsInterface, Stats } from '../../src/services/stats';
 
 describe('stats bucket unit tests', () => {
   it('initialize bucket', () => {
@@ -149,11 +141,10 @@ describe('stats bucket unit tests', () => {
   it('process records in range', () => {
     const curDate = DateTime.fromISO('2018-01-01T00:00:00.000Z');
 
-    const bucketSatsRequest: BucketStatsInterface = {
+    const bucketSatsRequest = {
       bucketSize: BUCKET_SIZE.WEEK,
       start: curDate.toJSDate(),
       end: curDate.plus({ days: 10 }).toJSDate(),
-      routineId: null,
     };
 
     const defaultRunRecord = {
@@ -262,11 +253,10 @@ describe('stats bucket unit tests', () => {
   it('process records with some outside range', () => {
     const curDate = DateTime.fromISO('2018-01-01T00:00:00.000Z').toUTC();
 
-    const bucketSatsRequest: BucketStatsInterface = {
+    const bucketSatsRequest = {
       bucketSize: BUCKET_SIZE.WEEK,
       start: curDate.toJSDate(),
       end: curDate.plus({ days: 10 }).toJSDate(),
-      routineId: null,
     };
 
     const defaultRunRecord = {
@@ -379,7 +369,6 @@ describe('stats bucket unit tests', () => {
       bucketSize: BUCKET_SIZE.WEEK,
       start: curDate.toJSDate(),
       end: curDate.plus({ days: 10 }).toJSDate(),
-      routineId: null,
     };
 
     const runRecords: CompletedRunRecordInterface[] = [];
@@ -451,7 +440,6 @@ describe('stats bucket unit tests', () => {
       bucketSize: BUCKET_SIZE.MONTH,
       start: curDate.toJSDate(),
       end: curDate.plus({ month: 1 }).toJSDate(),
-      routineId: null,
     };
 
     const runRecords: CompletedRunRecordInterface[] = [];
@@ -603,7 +591,6 @@ describe('stats bucket unit tests', () => {
       bucketSize: BUCKET_SIZE.MONTH,
       start: curDate.toJSDate(),
       end: curDate.plus({ month: 1 }).toJSDate(),
-      routineId: null,
     };
 
     const runRecords: CompletedRunRecordInterface[] = [];

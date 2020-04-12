@@ -1,26 +1,28 @@
 import {
   BUCKET_SIZE,
   BucketResultInterface,
-  BucketStatsInterface,
   CompletedRunRecord,
   CompletedRunRecordInterface,
-  RoutineStatsInterface,
   RUN_STATUS,
-  STATS_WINDOW,
   StatsResultInterface,
-  StatusResultInterface,
   SummaryResultInterface,
   TIMELINE_EVENT_STATUS,
   TimelineEvent,
   TimelineEventInterface,
 } from '@asserted/models';
-import { last } from 'lodash';
+import { first, last } from 'lodash';
 import { DateTime, Duration } from 'luxon';
 
 enum LOWER_BUCKET_SIZE {
   DAY = 'day',
   HOUR = 'hour',
   MINUTE = 'minute',
+}
+
+export interface BucketStatsInterface {
+  bucketSize: BUCKET_SIZE;
+  start: Date;
+  end: Date;
 }
 
 /**
@@ -150,27 +152,6 @@ export class Stats {
   }
 
   /**
-   * Get bucket from window
-   * @param {STATS_WINDOW} window
-   * @returns {BUCKET_SIZE}
-   */
-  static getBucketFromWindow(window: STATS_WINDOW): BUCKET_SIZE {
-    switch (window) {
-      case STATS_WINDOW.MONTH:
-        return BUCKET_SIZE.DAY;
-      case STATS_WINDOW.WEEK:
-        return BUCKET_SIZE.HOUR;
-      case STATS_WINDOW.DAY: // This and hour window are badly bucketed
-        return BUCKET_SIZE.HOUR;
-      case STATS_WINDOW.HOUR:
-        return BUCKET_SIZE.HOUR;
-      default: {
-        throw new Error(`unexpected window size: ${window}`);
-      }
-    }
-  }
-
-  /**
    * Get next lower appropriate bucket size
    * @param {BUCKET_SIZE} bucketSize
    * @returns {LOWER_BUCKET_SIZE}
@@ -242,11 +223,7 @@ export class Stats {
    * @param {boolean} relative
    * @returns {BucketStatsInterface}
    */
-  static bucketRecords(
-    runRecords: CompletedRunRecordInterface[],
-    bucketStats: Pick<BucketStatsInterface, 'bucketSize' | 'start' | 'end'>,
-    relative = false
-  ): BucketResultInterface {
+  static bucketRecords(runRecords: CompletedRunRecordInterface[], bucketStats: BucketStatsInterface, relative = false): BucketResultInterface {
     runRecords = [...runRecords];
 
     const { bucketSize } = bucketStats;
@@ -384,6 +361,7 @@ export class Stats {
 
   /**
    * Bucket records
+   * NOTE: Assumes records are sorted oldest to most recent
    * @param {CompletedRunRecordInterface[]} runRecords
    * @param {Date} start
    * @param {Date} end
@@ -433,10 +411,10 @@ export class Stats {
 
     const events = Stats.timelineRecords(runRecords, start.toJSDate(), end.toJSDate());
 
-    const latestStatus = last(events) || null;
+    const latestStatus = first(events) || null;
 
-    // Assumes the timeline is in ascending order
-    const latestDowntime = events.reduce((result, event) => {
+    // Need the timeline is in ascending order
+    const latestDowntime = events.reverse().reduce((result, event) => {
       if (event.status !== TIMELINE_EVENT_STATUS.UP && event.status !== TIMELINE_EVENT_STATUS.UNKNOWN) {
         return event;
       }
@@ -483,64 +461,10 @@ export class Stats {
       end: end.toJSDate(),
       latestStatus,
       latestDowntime,
+      latestRecord: last(runRecords) || null,
       day: dayBucket,
       week: weekBucket,
       month: monthBucket,
-    };
-  }
-
-  /**
-   * Get current stats for a routine
-   * @param {CompletedRunRecordInterface[]} runRecords
-   * @param {Date} start
-   * @param {Date} curDate
-   * @returns {RoutineStatsInterface}
-   */
-  static current(runRecords: CompletedRunRecordInterface[], start: Date, curDate = DateTime.utc().toJSDate()): RoutineStatsInterface {
-    const end = DateTime.fromJSDate(curDate).toJSDate();
-
-    const timeline = Stats.timelineRecords(runRecords, start, end);
-    const { buckets, bucketSize } = Stats.bucketRecords(
-      runRecords,
-      {
-        bucketSize: BUCKET_SIZE.HOUR,
-        start,
-        end,
-      },
-      true
-    );
-
-    const records = runRecords.map((runRecord) => new CompletedRunRecord(runRecord));
-    const latestRecord = last(records) || null;
-
-    return {
-      latestRecord,
-      timeline,
-      buckets,
-      bucketSize,
-    };
-  }
-
-  /**
-   * Get latest status
-   * @param {CompletedRunRecordInterface[]} runRecords
-   * @param {Date} curDate
-   * @returns {StatsResultInterface}
-   */
-  static status(runRecords: CompletedRunRecordInterface[], curDate = DateTime.utc().toJSDate()): StatusResultInterface {
-    // Need this length of time to calculate accurate uptime
-    const start = DateTime.fromJSDate(curDate).minus({ day: 30 });
-    const end = DateTime.fromJSDate(curDate);
-
-    const events = Stats.timelineRecords(runRecords, start.toJSDate(), end.toJSDate());
-
-    const [latestStatus] = events;
-
-    return {
-      start: start.toJSDate(),
-      end: end.toJSDate(),
-      latestStatus,
-      records: runRecords.reverse(),
     };
   }
 }
