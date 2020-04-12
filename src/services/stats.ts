@@ -492,21 +492,20 @@ export class Stats {
   /**
    * Get current stats for a routine
    * @param {CompletedRunRecordInterface[]} runRecords
-   * @param {STATS_WINDOW} window
+   * @param {Date} start
    * @param {Date} curDate
    * @returns {RoutineStatsInterface}
    */
-  static current(runRecords: CompletedRunRecordInterface[], window: STATS_WINDOW, curDate = DateTime.utc().toJSDate()): RoutineStatsInterface {
-    const start = DateTime.fromJSDate(curDate).minus({ [window]: 1 });
-    const end = DateTime.fromJSDate(curDate);
+  static current(runRecords: CompletedRunRecordInterface[], start: Date, curDate = DateTime.utc().toJSDate()): RoutineStatsInterface {
+    const end = DateTime.fromJSDate(curDate).toJSDate();
 
-    const timeline = Stats.timelineRecords(runRecords, start.toJSDate(), end.toJSDate());
+    const timeline = Stats.timelineRecords(runRecords, start, end);
     const { buckets, bucketSize } = Stats.bucketRecords(
       runRecords,
       {
-        bucketSize: Stats.getBucketFromWindow(window),
-        start: start.toJSDate(),
-        end: end.toJSDate(),
+        bucketSize: BUCKET_SIZE.HOUR,
+        start,
+        end,
       },
       true
     );
