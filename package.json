@@ -1,7 +1,7 @@
 {
   "name": "@asserted/stats",
   "description": "Basic stat aggregation library for asserted",
-  "version": "1.0.5-8",
+  "version": "1.0.5-9",
   "author": "Eric Hacke",
   "bugs": {
     "url": "https://github.com/assertedio/stats/issues"
