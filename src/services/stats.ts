@@ -1,26 +1,26 @@
 import {
   BUCKET_SIZE,
   BucketResultInterface,
-  BucketStatsInterface,
-  CompletedRunRecord,
   CompletedRunRecordInterface,
-  RoutineStatsInterface,
   RUN_STATUS,
-  RunRecordInterface,
   StatsResultInterface,
-  StatusResultInterface,
   SummaryResultInterface,
   TIMELINE_EVENT_STATUS,
-  TimelineEvent,
   TimelineEventInterface,
 } from '@asserted/models';
-import { last } from 'lodash';
+import { first, last } from 'lodash';
 import { DateTime, Duration } from 'luxon';
 
 enum LOWER_BUCKET_SIZE {
   DAY = 'day',
   HOUR = 'hour',
   MINUTE = 'minute',
+}
+
+export interface BucketStatsInterface {
+  bucketSize: BUCKET_SIZE;
+  start: Date;
+  end: Date;
 }
 
 /**
@@ -55,10 +55,10 @@ export class Stats {
   /**
    * Update bucket
    * @param {StatsResultInterface} bucket
-   * @param {RunRecordInterface} runRecord
+   * @param {CompletedRunRecordInterface} runRecord
    * @returns {StatsResultInterface}
    */
-  static updateBucket(bucket: StatsResultInterface, runRecord: RunRecordInterface | CompletedRunRecordInterface): StatsResultInterface {
+  static updateBucket(bucket: StatsResultInterface, runRecord: CompletedRunRecordInterface): StatsResultInterface {
     const { status, stats } = runRecord;
 
     if (!stats) {
@@ -120,7 +120,7 @@ export class Stats {
   /**
    * Only works for non-relative bucketing
    * @param {StatsResultInterface[]} buckets
-   * @param {RunRecordInterface} runRecord
+   * @param {CompletedRunRecordInterface} runRecord
    * @param {BUCKET_SIZE} bucketSize
    * @returns {StatsResultInterface[]}
    */
@@ -216,16 +216,12 @@ export class Stats {
 
   /**
    * Bucket records
-   * @param {RunRecordInterface[]} runRecords
+   * @param {CompletedRunRecordInterface[]} runRecords
    * @param {BucketStatsInterface} bucketStats
    * @param {boolean} relative
    * @returns {BucketStatsInterface}
    */
-  static bucketRecords(
-    runRecords: RunRecordInterface[],
-    bucketStats: Pick<BucketStatsInterface, 'bucketSize' | 'start' | 'end'>,
-    relative = false
-  ): BucketResultInterface {
+  static bucketRecords(runRecords: CompletedRunRecordInterface[], bucketStats: BucketStatsInterface, relative = false): BucketResultInterface {
     runRecords = [...runRecords];
 
     const { bucketSize } = bucketStats;
@@ -278,10 +274,10 @@ export class Stats {
 
   /**
    * Get timeline event status
-   * @param {RunRecordInterface} runRecord
+   * @param {CompletedRunRecordInterface} runRecord
    * @returns {TIMELINE_EVENT_STATUS}
    */
-  static getTimelineEventStatus(runRecord: RunRecordInterface | CompletedRunRecordInterface): TIMELINE_EVENT_STATUS {
+  static getTimelineEventStatus(runRecord: CompletedRunRecordInterface): TIMELINE_EVENT_STATUS {
     const { stats, timeoutType } = runRecord;
 
     if (timeoutType) {
@@ -308,28 +304,26 @@ export class Stats {
 
   /**
    * Initialize timeline event
-   * @param {RunRecordInterface} runRecord
+   * @param {CompletedRunRecordInterface} runRecord
    * @returns {TimelineEvent}
    */
-  static initializeTimelineEvent(runRecord: RunRecordInterface | CompletedRunRecordInterface): TimelineEventInterface {
-    return new TimelineEvent({
+  static initializeTimelineEvent(runRecord: CompletedRunRecordInterface): TimelineEventInterface {
+    return {
       start: runRecord.completedAt as Date,
       end: runRecord.completedAt as Date,
-      records: [new CompletedRunRecord(runRecord)],
+      durationSec: 0,
+      records: [runRecord],
       status: Stats.getTimelineEventStatus(runRecord),
-    });
+    };
   }
 
   /**
    * Increment timeline event
    * @param {TimelineEvent[]} events
-   * @param {RunRecordInterface} runRecord
+   * @param {CompletedRunRecordInterface} runRecord
    * @returns {TimelineEvent[]}
    */
-  static incrementTimelineEvent(
-    events: TimelineEventInterface[],
-    runRecord: RunRecordInterface | CompletedRunRecordInterface
-  ): TimelineEventInterface[] {
+  static incrementTimelineEvent(events: TimelineEventInterface[], runRecord: CompletedRunRecordInterface): TimelineEventInterface[] {
     if (!runRecord.completedAt) {
       throw new Error('Cannot include incomplete record in timeline');
     }
@@ -347,18 +341,19 @@ export class Stats {
     }
 
     events[0].end = runRecord.completedAt as Date;
+    // eslint-disable-next-line no-magic-numbers
+    events[0].durationSec = Math.round((events[0].end.valueOf() - events[0].start.valueOf()) / 1000);
 
     if (events[0].status !== status) {
-      events.unshift(
-        new TimelineEvent({
-          start: runRecord.completedAt as Date,
-          end: runRecord.completedAt as Date,
-          status: Stats.getTimelineEventStatus(runRecord),
-          records: [new CompletedRunRecord(runRecord)],
-        })
-      );
+      events.unshift({
+        start: runRecord.completedAt as Date,
+        end: runRecord.completedAt as Date,
+        durationSec: 0,
+        status: Stats.getTimelineEventStatus(runRecord),
+        records: [runRecord],
+      });
     } else {
-      events[0].records.unshift(new CompletedRunRecord(runRecord));
+      events[0].records.unshift(runRecord);
     }
 
     return events;
@@ -366,12 +361,13 @@ export class Stats {
 
   /**
    * Bucket records
-   * @param {RunRecordInterface[]} runRecords
+   * NOTE: Assumes records are sorted oldest to most recent
+   * @param {CompletedRunRecordInterface[]} runRecords
    * @param {Date} start
    * @param {Date} end
    * @returns {BucketStatsInterface}
    */
-  static timelineRecords(runRecords: RunRecordInterface[], start: Date, end: Date): TimelineEventInterface[] {
+  static timelineRecords(runRecords: CompletedRunRecordInterface[], start: Date, end: Date): TimelineEventInterface[] {
     runRecords = [...runRecords];
 
     const rangeStart = DateTime.fromJSDate(start).toUTC();
@@ -402,11 +398,11 @@ export class Stats {
 
   /**
    * Summary of events
-   * @param {RunRecordInterface[]} runRecords
+   * @param {CompletedRunRecordInterface[]} runRecords
    * @param {Date} curDate
    * @returns {SummaryResultInterface}
    */
-  static summarizeRecords(runRecords: RunRecordInterface[], curDate = DateTime.utc().toJSDate()): SummaryResultInterface {
+  static summarizeRecords(runRecords: CompletedRunRecordInterface[], curDate = DateTime.utc().toJSDate()): SummaryResultInterface {
     runRecords = [...runRecords];
 
     // Want to select enough runs for any month and/or 30 days
@@ -415,10 +411,10 @@ export class Stats {
 
     const events = Stats.timelineRecords(runRecords, start.toJSDate(), end.toJSDate());
 
-    const latestStatus = last(events) || null;
+    const latestStatus = first(events) || null;
 
-    // Assumes the timeline is in ascending order
-    const latestDowntime = events.reduce((result, event) => {
+    // Need the timeline is in ascending order
+    const latestDowntime = events.reverse().reduce((result, event) => {
       if (event.status !== TIMELINE_EVENT_STATUS.UP && event.status !== TIMELINE_EVENT_STATUS.UNKNOWN) {
         return event;
       }
@@ -465,64 +461,10 @@ export class Stats {
       end: end.toJSDate(),
       latestStatus,
       latestDowntime,
+      latestRecord: last(runRecords) || null,
       day: dayBucket,
       week: weekBucket,
       month: monthBucket,
-    };
-  }
-
-  /**
-   * Get current stats for a routine
-   * @param {RunRecordInterface[]} runRecords
-   * @param {Date} curDate
-   * @returns {RoutineStatsInterface}
-   */
-  static current(runRecords: RunRecordInterface[], curDate = DateTime.utc().toJSDate()): RoutineStatsInterface {
-    // Want to select enough runs for any month and/or 30 days
-    const start = DateTime.fromJSDate(curDate).minus({ week: 1 });
-    const end = DateTime.fromJSDate(curDate);
-
-    const timeline = Stats.timelineRecords(runRecords, start.toJSDate(), end.toJSDate());
-    const { buckets, bucketSize } = Stats.bucketRecords(
-      runRecords,
-      {
-        bucketSize: BUCKET_SIZE.HOUR,
-        start: start.toJSDate(),
-        end: end.toJSDate(),
-      },
-      true
-    );
-
-    const records = runRecords.map((runRecord) => new CompletedRunRecord(runRecord));
-    const latestRecord = last(records) || null;
-
-    return {
-      latestRecord,
-      timeline,
-      buckets,
-      bucketSize,
-    };
-  }
-
-  /**
-   * Get latest status
-   * @param {RunRecordInterface[]} runRecords
-   * @param {Date} curDate
-   * @returns {StatsResultInterface}
-   */
-  static status(runRecords: RunRecordInterface[], curDate = DateTime.utc().toJSDate()): StatusResultInterface {
-    const start = DateTime.fromJSDate(curDate).minus({ day: 1 });
-    const end = DateTime.fromJSDate(curDate);
-
-    const events = Stats.timelineRecords(runRecords, start.toJSDate(), end.toJSDate());
-
-    const [latestStatus] = events;
-
-    return {
-      start: start.toJSDate(),
-      end: end.toJSDate(),
-      latestStatus,
-      records: runRecords.reverse(),
     };
   }
 }

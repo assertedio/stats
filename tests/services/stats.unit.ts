@@ -1,16 +1,8 @@
-import {
-  BUCKET_SIZE,
-  BucketStatsInterface,
-  RUN_STATUS,
-  RUN_TIMEOUT_TYPE,
-  RUN_TYPE,
-  RunRecordInterface,
-  TIMELINE_EVENT_STATUS,
-} from '@asserted/models';
+import { BUCKET_SIZE, CompletedRunRecordInterface, RUN_STATUS, RUN_TIMEOUT_TYPE, RUN_TYPE, TIMELINE_EVENT_STATUS } from '@asserted/models';
 import { expect } from 'chai';
 import { DateTime } from 'luxon';
 
-import { Stats } from '../../src/services/stats';
+import { BucketStatsInterface, Stats } from '../../src/services/stats';
 
 describe('stats bucket unit tests', () => {
   it('initialize bucket', () => {
@@ -52,7 +44,6 @@ describe('stats bucket unit tests', () => {
       console: null,
       failType: null,
       timeoutType: null,
-      errors: null,
       stats: {
         duration: null,
         end: undefined,
@@ -63,10 +54,10 @@ describe('stats bucket unit tests', () => {
         failures: 2,
         start: curDate.toJSDate(),
       },
-      events: [],
+      results: [],
       createdAt: curDate.toJSDate(),
       updatedAt: curDate.toJSDate(),
-      completedAt: null,
+      completedAt: curDate.toJSDate(),
     };
 
     const bucket = Stats.initializeBucket(curDate.toJSDate(), curDate.plus({ days: 1 }).toJSDate());
@@ -106,7 +97,6 @@ describe('stats bucket unit tests', () => {
       console: null,
       failType: null,
       timeoutType: null,
-      errors: null,
       stats: {
         duration: null,
         end: undefined,
@@ -117,10 +107,10 @@ describe('stats bucket unit tests', () => {
         failures: 0,
         start: curDate.toJSDate(),
       },
-      events: [],
+      results: [],
       createdAt: curDate.toJSDate(),
       updatedAt: curDate.toJSDate(),
-      completedAt: null,
+      completedAt: curDate.toJSDate(),
     };
 
     const bucket = Stats.initializeBucket(curDate.toJSDate(), curDate.plus({ days: 1 }).toJSDate());
@@ -149,11 +139,10 @@ describe('stats bucket unit tests', () => {
   it('process records in range', () => {
     const curDate = DateTime.fromISO('2018-01-01T00:00:00.000Z');
 
-    const bucketSatsRequest: BucketStatsInterface = {
+    const bucketSatsRequest = {
       bucketSize: BUCKET_SIZE.WEEK,
       start: curDate.toJSDate(),
       end: curDate.plus({ days: 10 }).toJSDate(),
-      routineId: null,
     };
 
     const defaultRunRecord = {
@@ -168,7 +157,7 @@ describe('stats bucket unit tests', () => {
       console: null,
       failType: null,
       timeoutType: null,
-      errors: null,
+      results: [],
       stats: {
         duration: null,
         end: undefined,
@@ -179,12 +168,11 @@ describe('stats bucket unit tests', () => {
         failures: 0,
         start: curDate.toJSDate(),
       },
-      events: [],
       createdAt: curDate.toJSDate(),
       updatedAt: curDate.toJSDate(),
     };
 
-    const runRecords: RunRecordInterface[] = [
+    const runRecords: CompletedRunRecordInterface[] = [
       {
         ...defaultRunRecord,
         completedAt: curDate.plus({ day: 1 }).toJSDate(),
@@ -262,11 +250,10 @@ describe('stats bucket unit tests', () => {
   it('process records with some outside range', () => {
     const curDate = DateTime.fromISO('2018-01-01T00:00:00.000Z').toUTC();
 
-    const bucketSatsRequest: BucketStatsInterface = {
+    const bucketSatsRequest = {
       bucketSize: BUCKET_SIZE.WEEK,
       start: curDate.toJSDate(),
       end: curDate.plus({ days: 10 }).toJSDate(),
-      routineId: null,
     };
 
     const defaultRunRecord = {
@@ -281,7 +268,7 @@ describe('stats bucket unit tests', () => {
       console: null,
       failType: null,
       timeoutType: null,
-      errors: null,
+      results: [],
       stats: {
         duration: null,
         end: undefined,
@@ -292,12 +279,11 @@ describe('stats bucket unit tests', () => {
         failures: 0,
         start: curDate.toJSDate(),
       },
-      events: [],
       createdAt: curDate.toJSDate(),
       updatedAt: curDate.toJSDate(),
     };
 
-    const runRecords: RunRecordInterface[] = [
+    const runRecords: CompletedRunRecordInterface[] = [
       {
         ...defaultRunRecord,
         completedAt: curDate.minus({ week: 1 }).toJSDate(),
@@ -379,10 +365,9 @@ describe('stats bucket unit tests', () => {
       bucketSize: BUCKET_SIZE.WEEK,
       start: curDate.toJSDate(),
       end: curDate.plus({ days: 10 }).toJSDate(),
-      routineId: null,
     };
 
-    const runRecords: RunRecordInterface[] = [];
+    const runRecords: CompletedRunRecordInterface[] = [];
 
     const buckets = Stats.bucketRecords(runRecords, bucketSatsRequest);
     const expected = {
@@ -451,10 +436,9 @@ describe('stats bucket unit tests', () => {
       bucketSize: BUCKET_SIZE.MONTH,
       start: curDate.toJSDate(),
       end: curDate.plus({ month: 1 }).toJSDate(),
-      routineId: null,
     };
 
-    const runRecords: RunRecordInterface[] = [];
+    const runRecords: CompletedRunRecordInterface[] = [];
 
     const buckets = Stats.bucketRecords(runRecords, bucketStatsRequest, false);
 
@@ -603,10 +587,9 @@ describe('stats bucket unit tests', () => {
       bucketSize: BUCKET_SIZE.MONTH,
       start: curDate.toJSDate(),
       end: curDate.plus({ month: 1 }).toJSDate(),
-      routineId: null,
     };
 
-    const runRecords: RunRecordInterface[] = [];
+    const runRecords: CompletedRunRecordInterface[] = [];
 
     const buckets = Stats.bucketRecords(runRecords, bucketStatsRequest, true);
 
@@ -677,7 +660,7 @@ describe('stats bucket unit tests', () => {
       status: RUN_STATUS.CREATED,
       routineId: 'routine-id',
       projectId: 'project-id',
-      errors: null,
+      events: [],
       runId: 'foo-id',
       type: RUN_TYPE.MANUAL,
       stats: null,
@@ -736,7 +719,7 @@ describe('stats bucket unit tests', () => {
       status: RUN_STATUS.CREATED,
       routineId: 'routine-id',
       projectId: 'project-id',
-      errors: null,
+      events: [],
       runId: 'foo-id',
       type: RUN_TYPE.MANUAL,
       stats: null,
@@ -804,7 +787,7 @@ describe('stats bucket unit tests', () => {
       status: RUN_STATUS.CREATED,
       routineId: 'routine-id',
       projectId: 'project-id',
-      errors: null,
+      events: [],
       runId: 'foo-id',
       type: RUN_TYPE.MANUAL,
       stats: null,
@@ -900,7 +883,7 @@ describe('stats timeline unit tests', () => {
       status: RUN_STATUS.CREATED,
       routineId: 'routine-id',
       projectId: 'project-id',
-      errors: null,
+      results: [],
       runId: 'foo-id',
       type: RUN_TYPE.MANUAL,
       stats: null,
@@ -924,6 +907,7 @@ describe('stats timeline unit tests', () => {
     const events = [
       {
         end: curDate.toJSDate(),
+        start: curDate.toJSDate(),
         status: TIMELINE_EVENT_STATUS.DOWN,
         durationSec: 0,
         records: [],
@@ -937,12 +921,13 @@ describe('stats timeline unit tests', () => {
       runDurationMs: 0,
     } as any;
 
-    Stats.incrementTimelineEvent(events as any, failingRecord);
+    Stats.incrementTimelineEvent(events, failingRecord);
     expect(events).to.eql([
       {
         status: TIMELINE_EVENT_STATUS.DOWN,
+        start: curDate.toJSDate(),
         end: curDate.plus({ minutes: 5 }).toJSDate(),
-        durationSec: 0,
+        durationSec: 300,
         records: [failingRecord],
       },
     ]);
@@ -965,8 +950,9 @@ describe('stats timeline unit tests', () => {
       },
       {
         status: TIMELINE_EVENT_STATUS.DOWN,
+        start: curDate.toJSDate(),
         end: curDate.plus({ minutes: 10 }).toJSDate(),
-        durationSec: 0,
+        durationSec: 600,
         records: [failingRecord],
       },
     ]);
@@ -980,7 +966,7 @@ describe('stats timeline unit tests', () => {
       status: RUN_STATUS.CREATED,
       routineId: 'routine-id',
       projectId: 'project-id',
-      errors: null,
+      results: [],
       runId: 'foo-id',
       type: RUN_TYPE.MANUAL,
       stats: null,
@@ -1004,6 +990,7 @@ describe('stats timeline unit tests', () => {
     const events = [
       {
         end: curDate.toJSDate(),
+        start: curDate.toJSDate(),
         status: TIMELINE_EVENT_STATUS.DOWN,
         durationSec: 0,
         records: [],
@@ -1017,12 +1004,13 @@ describe('stats timeline unit tests', () => {
       runDurationMs: 0,
     } as any;
 
-    Stats.incrementTimelineEvent(events as any, failingRecord);
+    Stats.incrementTimelineEvent(events, failingRecord);
     expect(events).to.eql([
       {
         status: TIMELINE_EVENT_STATUS.DOWN,
+        start: curDate.toJSDate(),
         end: curDate.plus({ minutes: 5 }).toJSDate(),
-        durationSec: 0,
+        durationSec: 300,
         records: [failingRecord],
       },
     ]);
@@ -1038,8 +1026,9 @@ describe('stats timeline unit tests', () => {
     expect(events).to.eql([
       {
         status: TIMELINE_EVENT_STATUS.DOWN,
+        start: curDate.toJSDate(),
         end: curDate.plus({ minutes: 5 }).toJSDate(),
-        durationSec: 0,
+        durationSec: 300,
         records: [failingRecord],
       },
     ]);
@@ -1060,7 +1049,6 @@ describe('stats timeline unit tests', () => {
       console: null,
       failType: null,
       timeoutType: null,
-      errors: null,
       stats: {
         duration: null,
         end: undefined,
@@ -1071,12 +1059,12 @@ describe('stats timeline unit tests', () => {
         failures: 0,
         start: curDate.toJSDate(),
       },
-      events: [],
+      results: [],
       createdAt: curDate.toJSDate(),
       updatedAt: curDate.toJSDate(),
     };
 
-    const runRecords: RunRecordInterface[] = [
+    const runRecords: CompletedRunRecordInterface[] = [
       {
         ...defaultRunRecord,
         completedAt: curDate.minus({ week: 1 }).toJSDate(),
@@ -1118,13 +1106,13 @@ describe('stats timeline unit tests', () => {
         start: curDate.plus({ day: 3 }).toJSDate(),
         end: curDate.plus({ day: 4 }).toJSDate(),
         status: 'impaired',
-        durationSec: 0,
+        durationSec: 86400,
       },
       {
         start: curDate.plus({ day: 2 }).toJSDate(),
         end: curDate.plus({ day: 3 }).toJSDate(),
         status: 'up',
-        durationSec: 0,
+        durationSec: 86400,
       },
     ];
     expect(events.map(({ records, ...rest }) => rest)).to.eql(expected);
