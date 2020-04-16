@@ -907,6 +907,7 @@ describe('stats timeline unit tests', () => {
     const events = [
       {
         end: curDate.toJSDate(),
+        start: curDate.toJSDate(),
         status: TIMELINE_EVENT_STATUS.DOWN,
         durationSec: 0,
         records: [],
@@ -920,12 +921,13 @@ describe('stats timeline unit tests', () => {
       runDurationMs: 0,
     } as any;
 
-    Stats.incrementTimelineEvent(events as any, failingRecord);
+    Stats.incrementTimelineEvent(events, failingRecord);
     expect(events).to.eql([
       {
         status: TIMELINE_EVENT_STATUS.DOWN,
+        start: curDate.toJSDate(),
         end: curDate.plus({ minutes: 5 }).toJSDate(),
-        durationSec: 0,
+        durationSec: 300,
         records: [failingRecord],
       },
     ]);
@@ -948,8 +950,9 @@ describe('stats timeline unit tests', () => {
       },
       {
         status: TIMELINE_EVENT_STATUS.DOWN,
+        start: curDate.toJSDate(),
         end: curDate.plus({ minutes: 10 }).toJSDate(),
-        durationSec: 0,
+        durationSec: 600,
         records: [failingRecord],
       },
     ]);
@@ -987,6 +990,7 @@ describe('stats timeline unit tests', () => {
     const events = [
       {
         end: curDate.toJSDate(),
+        start: curDate.toJSDate(),
         status: TIMELINE_EVENT_STATUS.DOWN,
         durationSec: 0,
         records: [],
@@ -1000,12 +1004,13 @@ describe('stats timeline unit tests', () => {
       runDurationMs: 0,
     } as any;
 
-    Stats.incrementTimelineEvent(events as any, failingRecord);
+    Stats.incrementTimelineEvent(events, failingRecord);
     expect(events).to.eql([
       {
         status: TIMELINE_EVENT_STATUS.DOWN,
+        start: curDate.toJSDate(),
         end: curDate.plus({ minutes: 5 }).toJSDate(),
-        durationSec: 0,
+        durationSec: 300,
         records: [failingRecord],
       },
     ]);
@@ -1021,8 +1026,9 @@ describe('stats timeline unit tests', () => {
     expect(events).to.eql([
       {
         status: TIMELINE_EVENT_STATUS.DOWN,
+        start: curDate.toJSDate(),
         end: curDate.plus({ minutes: 5 }).toJSDate(),
-        durationSec: 0,
+        durationSec: 300,
         records: [failingRecord],
       },
     ]);
@@ -1100,13 +1106,13 @@ describe('stats timeline unit tests', () => {
         start: curDate.plus({ day: 3 }).toJSDate(),
         end: curDate.plus({ day: 4 }).toJSDate(),
         status: 'impaired',
-        durationSec: 0,
+        durationSec: 86400,
       },
       {
         start: curDate.plus({ day: 2 }).toJSDate(),
         end: curDate.plus({ day: 3 }).toJSDate(),
         status: 'up',
-        durationSec: 0,
+        durationSec: 86400,
       },
     ];
     expect(events.map(({ records, ...rest }) => rest)).to.eql(expected);
