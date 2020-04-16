@@ -1,13 +1,11 @@
 import {
   BUCKET_SIZE,
   BucketResultInterface,
-  CompletedRunRecord,
   CompletedRunRecordInterface,
   RUN_STATUS,
   StatsResultInterface,
   SummaryResultInterface,
   TIMELINE_EVENT_STATUS,
-  TimelineEvent,
   TimelineEventInterface,
 } from '@asserted/models';
 import { first, last } from 'lodash';
