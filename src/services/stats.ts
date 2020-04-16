@@ -310,12 +310,13 @@ export class Stats {
    * @returns {TimelineEvent}
    */
   static initializeTimelineEvent(runRecord: CompletedRunRecordInterface): TimelineEventInterface {
-    return new TimelineEvent({
+    return {
       start: runRecord.completedAt as Date,
       end: runRecord.completedAt as Date,
-      records: [new CompletedRunRecord(runRecord)],
+      durationSec: 0,
+      records: [runRecord],
       status: Stats.getTimelineEventStatus(runRecord),
-    });
+    };
   }
 
   /**
@@ -342,18 +343,19 @@ export class Stats {
     }
 
     events[0].end = runRecord.completedAt as Date;
+    // eslint-disable-next-line no-magic-numbers
+    events[0].durationSec = Math.round((events[0].end.valueOf() - events[0].start.valueOf()) / 1000);
 
     if (events[0].status !== status) {
-      events.unshift(
-        new TimelineEvent({
-          start: runRecord.completedAt as Date,
-          end: runRecord.completedAt as Date,
-          status: Stats.getTimelineEventStatus(runRecord),
-          records: [new CompletedRunRecord(runRecord)],
-        })
-      );
+      events.unshift({
+        start: runRecord.completedAt as Date,
+        end: runRecord.completedAt as Date,
+        durationSec: 0,
+        status: Stats.getTimelineEventStatus(runRecord),
+        records: [runRecord],
+      });
     } else {
-      events[0].records.unshift(new CompletedRunRecord(runRecord));
+      events[0].records.unshift(runRecord);
     }
 
     return events;
