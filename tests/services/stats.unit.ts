@@ -44,6 +44,7 @@ describe('stats bucket unit tests', () => {
       console: null,
       failType: null,
       timeoutType: null,
+      error: null,
       stats: {
         duration: null,
         end: undefined,
@@ -97,6 +98,7 @@ describe('stats bucket unit tests', () => {
       console: null,
       failType: null,
       timeoutType: null,
+      error: null,
       stats: {
         duration: null,
         end: undefined,
@@ -157,6 +159,7 @@ describe('stats bucket unit tests', () => {
       console: null,
       failType: null,
       timeoutType: null,
+      error: null,
       results: [],
       stats: {
         duration: null,
@@ -268,6 +271,7 @@ describe('stats bucket unit tests', () => {
       console: null,
       failType: null,
       timeoutType: null,
+      error: null,
       results: [],
       stats: {
         duration: null,
@@ -972,6 +976,7 @@ describe('stats timeline unit tests', () => {
       stats: null,
       console: null,
       failType: null,
+      error: null,
       testDurationMs: null,
       runDurationMs: null,
       timeoutType: null,
@@ -1049,6 +1054,7 @@ describe('stats timeline unit tests', () => {
       console: null,
       failType: null,
       timeoutType: null,
+      error: null,
       stats: {
         duration: null,
         end: undefined,
